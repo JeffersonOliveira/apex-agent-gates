@@ -22,10 +22,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # The current Salesforce CLI does not start on Node 20 (undici: webidl.util.markAsUncloneable is not a function).
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+
+      # Code Analyzer runs PMD, which needs Java.
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
 
       - name: Install Salesforce CLI
         run: npm i -g @salesforce/cli
@@ -39,6 +47,7 @@ jobs:
 
       # Gate 3b: a fresh scratch org per pull request, so nothing depends on leftovers from a previous run.
       - name: Gate 3b scratch org
+        id: scratch
         env:
           SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
         run: |
@@ -60,7 +69,7 @@ jobs:
       - name: Gate 3d persona tests
         run: sf apex run test --target-org ci --test-level RunLocalTests --code-coverage --result-format human --wait 10
 
-      # Always remove the scratch org, even when a gate failed.
+      # Remove the scratch org even when a later gate failed, but only if it was created.
       - name: Delete scratch org
-        if: always()
+        if: always() && steps.scratch.outcome == 'success'
         run: sf org delete scratch --target-org ci --no-prompt
