@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write   # only to post the Gate 3a explanation as a comment
 
 jobs:
   gates:
@@ -43,10 +44,18 @@ jobs:
       # Each blocking violation becomes an annotation on its line in the pull request, plus a table in the job summary,
       # so the reviewer sees why it failed without opening the logs.
       - name: Gate 3a static analysis
+        id: gate3a
         run: |
           sf plugins install code-analyzer
           sf code-analyzer run --workspace ./force-app --rule-selector Recommended --output-file code-analyzer.json
           python3 .github/scripts/report-violations.py code-analyzer.json 3
+
+      # When Gate 3a blocks, say why in the pull request conversation (and notify the author by email).
+      - name: Explain Gate 3a in the pull request
+        if: failure() && steps.gate3a.outcome == 'failure' && hashFiles('gate3a-report.md') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body-file gate3a-report.md
 
       # Gate 3b: a fresh scratch org per pull request, so nothing depends on leftovers from a previous run.
       - name: Gate 3b scratch org
