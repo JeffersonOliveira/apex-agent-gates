@@ -5,7 +5,7 @@ set -euo pipefail
 trap 'exit 0' ERR
 
 input="$(cat)"
-root="${CLAUDE_PROJECT_DIR:-.}"
+root="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}"
 mkdir -p "${root}/.claude/logs"
 ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 

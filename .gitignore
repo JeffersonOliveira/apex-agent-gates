@@ -11,7 +11,7 @@ auth.txt
 *.sfdx-url
 
 # Gate 2 audit trail is local to each machine
-.claude/logs/
+**/.claude/logs/
 
 # Node and editors
 node_modules/
