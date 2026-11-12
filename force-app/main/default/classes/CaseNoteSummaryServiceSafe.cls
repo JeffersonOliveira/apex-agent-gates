@@ -29,12 +29,15 @@ public with sharing class CaseNoteSummaryServiceSafe {
         if (caseIds == null || caseIds.isEmpty()) {
             return result;
         }
-        for (Case c : [
+        // Query into a list first. In a SOQL for loop, a user mode FLS failure reports
+        // "Variable does not exist: tmpVar1" instead of naming the protected field.
+        List<Case> cases = [
             SELECT Id, Subject, Description, Internal_Notes__c
             FROM Case
             WHERE Id IN :caseIds
             WITH USER_MODE
-        ]) {
+        ];
+        for (Case c : cases) {
             result.add(new Summary(c));
         }
         return result;

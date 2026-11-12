@@ -1,7 +1,20 @@
 // Creates the two lab personas as real users in the org.
 // Run with: sf apex run --target-org lab --file scripts/apex/setup-personas.apex
-// Prerequisite: force-app is deployed (the permission sets must exist) and the org has 2 free Salesforce licenses.
+// OPTIONAL. The tests do NOT need it: TestPersonas creates the personas inside each test.
+// Use it only to try "Login As" with real users.
+// Prerequisite: force-app is deployed and the org has 3 free Salesforce licenses (2 personas + 1 that
+// the persona tests need for their own temporary user). A scratch org or Developer Edition has only 2
+// in total, so there this script stops on purpose instead of breaking the tests.
 // Anonymous Apex has no mixed DML problem here: User and PermissionSetAssignment are both setup objects.
+
+UserLicense salesforceLicense = [SELECT TotalLicenses, UsedLicenses FROM UserLicense WHERE Name = 'Salesforce' LIMIT 1];
+Integer freeLicenses = salesforceLicense.TotalLicenses - salesforceLicense.UsedLicenses;
+if (freeLicenses < 3) {
+    throw new IllegalArgumentException(
+        'Only ' + freeLicenses + ' free Salesforce license(s). Creating the personas would take the license the persona tests need. '
+        + 'Skip this script: the tests create the personas themselves.'
+    );
+}
 
 Profile standardUser = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1];
 Map<String, PermissionSet> permissionSets = new Map<String, PermissionSet>();

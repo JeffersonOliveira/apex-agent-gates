@@ -51,6 +51,11 @@ jobs:
       - name: Gate 3c validate deploy
         run: sf project deploy start --target-org ci --wait 10
 
+      # Lab setup, not a gate: a source deploy grants no FLS on the new fields, and since API 67.0
+      # Apex runs SOQL and DML in user mode by default, so the CI user needs this to create test data.
+      - name: Grant lab field access to the CI user
+        run: sf org assign permset --name Lab_Admin_Field_Access --target-org ci
+
       # Gate 3d: persona tests. System.runAs on a restricted user is what catches the leak of case 1.
       - name: Gate 3d persona tests
         run: sf apex run test --target-org ci --test-level RunLocalTests --code-coverage --result-format human --wait 10

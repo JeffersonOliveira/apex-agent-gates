@@ -1,0 +1,4 @@
+# Hooks and scripts run in bash: keep LF line endings on every OS, or bash fails on Windows checkouts.
+*.sh    text eol=lf
+*.apex  text eol=lf
+*       text=auto

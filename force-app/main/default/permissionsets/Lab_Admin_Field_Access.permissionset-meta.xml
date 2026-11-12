@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Lab setup: assign to the admin who runs the lab. A source deploy grants no FLS on new fields, and since API 67.0 Apex SOQL and DML run in user mode by default.</description>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Case.Internal_Notes__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Opportunity.Lines_Total__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>Lab Admin Field Access</label>
+</PermissionSet>
