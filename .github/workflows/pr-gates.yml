@@ -2,10 +2,11 @@
 # Gate 1 (CLAUDE.md) asks the agent to behave, Gate 2 (hooks) blocks during the session,
 # and this pipeline is the last automatic check before a human reviews.
 #
-# Lab note: CaseNoteSummaryService and OpportunityLineTotals are unsafe on purpose, so Gate 3a is
-# expected to flag them. Run it on a branch that fixes or removes them to see the pipeline go green.
+# Gate 3a analyzes only the Apex that the pull request adds or changes, the way teams handle legacy code.
+# The unsafe-on-purpose lab classes (CaseNoteSummaryService, OpportunityLineTotals) are flagged whenever a pull request touches them.
 #
-# Required repository secret: SFDX_AUTH_URL (sfdx auth URL of a Dev Hub, never a production org that holds real data).
+# Optional repository secret: SFDX_AUTH_URL (sfdx auth URL of a Dev Hub, never a production org that holds real data).
+# Without it, Gates 3b to 3d are skipped with a notice and only Gate 3a runs.
 name: pr-gates
 
 on:
@@ -19,9 +20,13 @@ jobs:
   gates:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      HAS_DEVHUB: ${{ secrets.SFDX_AUTH_URL != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history, to diff the pull request against its base branch
 
       # The current Salesforce CLI does not start on Node 20 (undici: webidl.util.markAsUncloneable is not a function).
       - name: Setup Node
@@ -39,15 +44,22 @@ jobs:
       - name: Install Salesforce CLI
         run: npm i -g @salesforce/cli
 
-      # Gate 3a: static analysis. Catches patterns (SOQL in loops, missing sharing, CRUD/FLS violations).
-      # It cannot see behavior, so it does not replace the persona test of Gate 3d.
-      # Each blocking violation becomes an annotation on its line in the pull request, plus a table in the job summary,
-      # so the reviewer sees why it failed without opening the logs.
+      # Gate 3a: static analysis of the Apex changed by this pull request.
+      # Catches patterns (SOQL in loops, missing sharing, CRUD/FLS violations). It cannot see behavior,
+      # so it does not replace the persona test of Gate 3d.
+      # Each blocking violation becomes an annotation on its line, a table in the job summary and a PR comment.
       - name: Gate 3a static analysis
         id: gate3a
         run: |
+          changed="$(git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}...HEAD" -- 'force-app/*.cls' 'force-app/*.trigger')"
+          if [ -z "$changed" ]; then
+            echo "## Gate 3a passed: this pull request changes no Apex" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "Apex changed by this pull request:"
+          echo "$changed"
           sf plugins install code-analyzer
-          sf code-analyzer run --workspace ./force-app --rule-selector Recommended --output-file code-analyzer.json
+          sf code-analyzer run --workspace ./force-app --target $changed --rule-selector Recommended --output-file code-analyzer.json
           python3 .github/scripts/report-violations.py code-analyzer.json 3
 
       # When Gate 3a blocks, say why in the pull request conversation (and notify the author by email).
@@ -57,9 +69,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body-file gate3a-report.md
 
+      - name: Gates 3b to 3d need a Dev Hub
+        if: env.HAS_DEVHUB != 'true'
+        run: |
+          echo "::notice title=Gates 3b to 3d skipped::Add the SFDX_AUTH_URL repository secret to run the scratch org, validate deploy and persona tests."
+          echo "Gates 3b to 3d skipped: add the SFDX_AUTH_URL repository secret to run them." >> "$GITHUB_STEP_SUMMARY"
+
       # Gate 3b: a fresh scratch org per pull request, so nothing depends on leftovers from a previous run.
       - name: Gate 3b scratch org
         id: scratch
+        if: env.HAS_DEVHUB == 'true'
         env:
           SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
         run: |
@@ -70,15 +89,18 @@ jobs:
 
       # Gate 3c: validate deploy. If it does not deploy clean into a new org, it does not go on.
       - name: Gate 3c validate deploy
+        if: env.HAS_DEVHUB == 'true'
         run: sf project deploy start --target-org ci --wait 10
 
       # Lab setup, not a gate: a source deploy grants no FLS on the new fields, and since API 67.0
       # Apex runs SOQL and DML in user mode by default, so the CI user needs this to create test data.
       - name: Grant lab field access to the CI user
+        if: env.HAS_DEVHUB == 'true'
         run: sf org assign permset --name Lab_Admin_Field_Access --target-org ci
 
       # Gate 3d: persona tests. System.runAs on a restricted user is what catches the leak of case 1.
       - name: Gate 3d persona tests
+        if: env.HAS_DEVHUB == 'true'
         run: sf apex run test --target-org ci --test-level RunLocalTests --code-coverage --result-format human --wait 10
 
       # Remove the scratch org even when a later gate failed, but only if it was created.
