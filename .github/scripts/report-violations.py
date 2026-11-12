@@ -30,16 +30,20 @@ for v in violations:
     print(f"::error file={path},line={line},title={v['rule']} ({names.get(sev, sev)})::{msg}")
     blocking.append((names.get(sev, sev), v["rule"], path, line, msg))
 
-summary = os.environ.get("GITHUB_STEP_SUMMARY")
-if summary:
-    with open(summary, "a", encoding="utf-8") as out:
-        if blocking:
-            out.write(f"## Gate 3a blocked this pull request: {len(blocking)} violation(s) at severity {threshold} or higher\n\n")
-            out.write("| Severity | Rule | File | Line | Message |\n|---|---|---|---|---|\n")
-            for sev, rule, path, line, msg in blocking:
-                out.write(f"| {sev} | {rule} | `{path}` | {line} | {msg.replace('|', '/')} |\n")
-        else:
-            out.write(f"## Gate 3a passed: no violation at severity {threshold} or higher\n")
+if blocking:
+    report = (f"## Gate 3a blocked this pull request: {len(blocking)} violation(s) at severity {threshold} or higher\n\n"
+              "| Severity | Rule | File | Line | Message |\n|---|---|---|---|---|\n")
+    for sev, rule, path, line, msg in blocking:
+        report += f"| {sev} | {rule} | `{path}` | {line} | {msg.replace('|', '/')} |\n"
+    report += "\nEach violation is also annotated on its line in the **Files changed** tab.\n"
+else:
+    report = f"## Gate 3a passed: no violation at severity {threshold} or higher\n"
+
+# Job summary (Checks page) and a file the next step posts as a pull request comment.
+for target in (os.environ.get("GITHUB_STEP_SUMMARY"), "gate3a-report.md"):
+    if target:
+        with open(target, "a", encoding="utf-8") as out:
+            out.write(report)
 
 print(f"Gate 3a: {len(blocking)} blocking violation(s), {len(violations)} in total.")
 sys.exit(1 if blocking else 0)
