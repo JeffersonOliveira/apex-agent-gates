@@ -1,0 +1,20 @@
+# Salesforce CLI and local state
+.sfdx/
+.sf/
+.localdevserver/
+*.log
+
+# Secrets, never commit
+.env
+.env.*
+auth.txt
+*.sfdx-url
+
+# Gate 2 audit trail is local to each machine
+.claude/logs/
+
+# Node and editors
+node_modules/
+.vscode/
+.idea/
+.DS_Store

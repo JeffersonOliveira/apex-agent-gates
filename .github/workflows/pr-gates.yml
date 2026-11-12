@@ -1,0 +1,61 @@
+# Gate 3: what runs on every pull request, before the merge.
+# Gate 1 (CLAUDE.md) asks the agent to behave, Gate 2 (hooks) blocks during the session,
+# and this pipeline is the last automatic check before a human reviews.
+#
+# Lab note: CaseNoteSummaryService and OpportunityLineTotals are unsafe on purpose, so Gate 3a is
+# expected to flag them. Run it on a branch that fixes or removes them to see the pipeline go green.
+#
+# Required repository secret: SFDX_AUTH_URL (sfdx auth URL of a Dev Hub, never a production org that holds real data).
+name: pr-gates
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Salesforce CLI
+        run: npm i -g @salesforce/cli
+
+      # Gate 3a: static analysis. Catches patterns (SOQL in loops, missing sharing, CRUD/FLS violations).
+      # It cannot see behavior, so it does not replace the persona test of Gate 3d.
+      - name: Gate 3a static analysis
+        run: |
+          sf plugins install code-analyzer
+          sf code-analyzer run --workspace ./force-app --rule-selector Recommended --severity-threshold 3
+
+      # Gate 3b: a fresh scratch org per pull request, so nothing depends on leftovers from a previous run.
+      - name: Gate 3b scratch org
+        env:
+          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
+        run: |
+          echo "$SFDX_AUTH_URL" > auth.txt
+          sf org login sfdx-url --sfdx-url-file auth.txt --set-default-dev-hub --alias devhub
+          rm -f auth.txt
+          sf org create scratch --definition-file config/project-scratch-def.json --alias ci --duration-days 1 --set-default --target-dev-hub devhub
+
+      # Gate 3c: validate deploy. If it does not deploy clean into a new org, it does not go on.
+      - name: Gate 3c validate deploy
+        run: sf project deploy start --target-org ci --wait 10
+
+      # Gate 3d: persona tests. System.runAs on a restricted user is what catches the leak of case 1.
+      - name: Gate 3d persona tests
+        run: sf apex run test --target-org ci --test-level RunLocalTests --code-coverage --result-format human --wait 10
+
+      # Always remove the scratch org, even when a gate failed.
+      - name: Delete scratch org
+        if: always()
+        run: sf org delete scratch --target-org ci --no-prompt

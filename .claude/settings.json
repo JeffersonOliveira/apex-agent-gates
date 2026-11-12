@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(sf org delete:*)",
+      "Bash(git push --force:*)",
+      "Read(./.env)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash",
+        "hooks": [ { "type": "command", "command": ".claude/hooks/block-prod-deploy.sh" } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Edit|Write",
+        "hooks": [ { "type": "command", "command": ".claude/hooks/check-apex-rules.sh" } ] },
+      { "matcher": ".*",
+        "hooks": [ { "type": "command", "command": ".claude/hooks/log-tool-calls.sh" } ] }
+    ]
+  }
+}
