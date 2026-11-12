@@ -44,6 +44,31 @@ O script `scripts/apex/setup-personas.apex` é opcional: cria as personas como u
 
 Passo a passo detalhado, com o que pode dar errado: [ROTEIRO_CENARIOS.md](ROTEIRO_CENARIOS.md). Tabela para medir as seis tarefas, com e sem portões: [lab/CASOS.md](lab/CASOS.md). Os prompts das tarefas estão em `tasks/T1.md` a `tasks/T6.md`.
 
+## Materiais de apoio
+
+Para estudar cada assunto da palestra. O Trailhead tem versão em português: troque `/content/` por `/pt-BR/content/` no link.
+
+**Caso 1: permissão (user mode, sharing, FLS)**
+- Trailhead: [Write Secure Apex Controllers](https://trailhead.salesforce.com/content/learn/modules/secure-serverside-development/write-secure-apex-controllers), do módulo Secure Server-Side Development
+- Documentação: [Set an Access Mode for Database Operations](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_enforce_usermode.htm) (`WITH USER_MODE` e `AccessLevel.USER_MODE`)
+- Documentação: [Apex Versioned Behavior Changes](https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexcode/versioned_behavior_changes.htm) (o que muda no padrão a partir da API 67.0)
+- Documentação: [Secure Apex Classes](https://developer.salesforce.com/docs/platform/lwc/guide/apex-security.html) (Apex chamado por LWC, ligado à tarefa T4)
+
+**Caso 2: volume e limites**
+- Documentação: [Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm)
+- Trailhead: [Bulk Apex Triggers](https://trailhead.salesforce.com/content/learn/modules/apex_triggers/apex_triggers_bulk)
+
+**Caso 3: teste que prova, não só cobre**
+- Trailhead: [Write Permission-Based Tests](https://trailhead.salesforce.com/content/learn/modules/unit-testing-on-the-lightning-platform/permission-based-tests)
+- Trailhead: [Create Specialized Tests](https://trailhead.salesforce.com/content/learn/modules/apex-testing-write-unit-tests/create-specialized-tests)
+- Documentação: [Using the runAs Method](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_testing_tools_runas.htm)
+
+**Os três portões**
+- Claude Code: [Hooks](https://code.claude.com/docs/en/hooks), [CLAUDE.md e memória](https://code.claude.com/docs/en/memory), [settings e permissões](https://code.claude.com/docs/en/settings)
+- [Salesforce Code Analyzer](https://developer.salesforce.com/docs/platform/salesforce-code-analyzer/guide/code-analyzer.html) (o Gate 3a do pipeline)
+- Trailhead: [Agentforce Vibes Basics](https://trailhead.salesforce.com/content/learn/modules/agentforce-vibes-basics) (o mesmo método vale para o agente da Salesforce)
+- [OWASP Top 10 for LLM Applications](https://genai.owasp.org/llm-top-10/) (prompt injection e outros riscos que ficam fora dos três portões)
+
 ## Estrutura
 
 ```
