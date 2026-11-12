@@ -40,10 +40,13 @@ jobs:
 
       # Gate 3a: static analysis. Catches patterns (SOQL in loops, missing sharing, CRUD/FLS violations).
       # It cannot see behavior, so it does not replace the persona test of Gate 3d.
+      # Each blocking violation becomes an annotation on its line in the pull request, plus a table in the job summary,
+      # so the reviewer sees why it failed without opening the logs.
       - name: Gate 3a static analysis
         run: |
           sf plugins install code-analyzer
-          sf code-analyzer run --workspace ./force-app --rule-selector Recommended --severity-threshold 3
+          sf code-analyzer run --workspace ./force-app --rule-selector Recommended --output-file code-analyzer.json
+          python3 .github/scripts/report-violations.py code-analyzer.json 3
 
       # Gate 3b: a fresh scratch org per pull request, so nothing depends on leftovers from a previous run.
       - name: Gate 3b scratch org
