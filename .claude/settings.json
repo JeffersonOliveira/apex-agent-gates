@@ -4,19 +4,20 @@
       "Bash(rm -rf:*)",
       "Bash(sf org delete:*)",
       "Bash(git push --force:*)",
-      "Read(./.env)"
+      "Read(./.env)",
+      "mcp__salesforce-dx__deploy_metadata"
     ]
   },
   "hooks": {
     "PreToolUse": [
       { "matcher": "Bash",
-        "hooks": [ { "type": "command", "command": ".claude/hooks/block-prod-deploy.sh" } ] }
+        "hooks": [ { "type": "command", "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/.claude/hooks/block-prod-deploy.sh\" || exit 2" } ] }
     ],
     "PostToolUse": [
       { "matcher": "Edit|Write",
-        "hooks": [ { "type": "command", "command": ".claude/hooks/check-apex-rules.sh" } ] },
+        "hooks": [ { "type": "command", "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/.claude/hooks/check-apex-rules.sh\" || exit 2" } ] },
       { "matcher": ".*",
-        "hooks": [ { "type": "command", "command": ".claude/hooks/log-tool-calls.sh" } ] }
+        "hooks": [ { "type": "command", "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/.claude/hooks/log-tool-calls.sh\"" } ] }
     ]
   }
 }

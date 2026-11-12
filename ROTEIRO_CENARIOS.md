@@ -124,6 +124,9 @@ O que pode dar errado na preparação:
 
 **O que pode dar errado**
 - Hook sem permissão de execução: o Claude Code mostra erro de hook em vez de bloquear.
+- Hook chamado por caminho relativo (`.claude/hooks/...`): depois que o agente roda um `cd` para uma subpasta, o Claude Code não acha mais o script, e o hook deixa de rodar sem avisar. O `settings.json` do laboratório usa `$CLAUDE_PROJECT_DIR` (com `git rev-parse --show-toplevel` como reserva), e o hook de deploy termina com `|| exit 2`: se o script não for encontrado, o comando é bloqueado em vez de liberado.
+- Outro caminho para o mesmo deploy: se o agente tiver um servidor MCP com ferramenta de deploy, ele pode fazer o deploy sem passar pelo Bash. O `settings.json` nega a ferramenta `mcp__salesforce-dx__deploy_metadata`. Todo caminho até a org precisa passar pelo portão.
+- Tentativa bloqueada não chega ao `PostToolUse`, então o hook de log não a vê. O próprio hook de deploy grava a linha com `"blocked": true`.
 - O hook de regras usa heurística de arquivo inteiro (não analisa o código): classes inseguras de propósito do laboratório são sinalizadas se alguém as editar. Isso é esperado. Para exceções reais, use o marcador `// gates:allow-system-mode: <motivo>`.
 - O hook de regras não pega o teste fraco da T3: ele tem um assert, só que fraco. Quem pega é o teste com persona do Portão 3 e a revisão humana.
 - Deploy sem `--target-org` explícito não é bloqueado pelo hook (a org padrão é desconhecida). A regra do `CLAUDE.md` manda usar `--target-org lab`.
